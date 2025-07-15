@@ -48,6 +48,7 @@ require_once '../includes/header.php';
             <li><a href="<?php echo BASE_URL; ?>/clerk/checkin.php">Check In</a></li>
             <li><a href="<?php echo BASE_URL; ?>/clerk/checkout.php" class="active">Check Out</a></li>
             <li><a href="<?php echo BASE_URL; ?>/clerk/reservations.php">Reservations</a></li>
+            <li><a href="<?php echo BASE_URL; ?>/clerk/profile.php">Profile</a></li>
         </ul>
     </div>
     <div class="main-content">

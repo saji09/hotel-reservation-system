@@ -10,6 +10,9 @@ $occupancyReport = getDailyOccupancyReport($today);
 $totalOccupancy = array_sum(array_column($occupancyReport, 'total_occupancy'));
 $totalRevenue = array_sum(array_column($occupancyReport, 'total_revenue'));
 
+// Get weekly data for charts
+$weeklyData = getWeeklyOccupancyData();
+
 // Get recent reservations
 $stmt = $pdo->query("SELECT r.reservation_id, r.check_in_date, r.check_out_date, 
                      u.first_name, u.last_name, rt.name as room_type,
@@ -57,6 +60,29 @@ require_once '../includes/header.php';
                     echo $stmt->fetchColumn();
                     ?>
                 </p>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="chart-row">
+            <div class="chart-container">
+                <h2>Weekly Occupancy</h2>
+                <canvas id="occupancyChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2>Weekly Revenue</h2>
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-row">
+            <div class="chart-container">
+                <h2>Room Type Distribution</h2>
+                <canvas id="roomTypeChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h2>Reservation Status</h2>
+                <canvas id="statusChart"></canvas>
             </div>
         </div>
         
@@ -119,5 +145,208 @@ require_once '../includes/header.php';
         <?php endif; ?>
     </div>
 </div>
+
+<!-- Add Chart.js library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Weekly Occupancy Chart
+    const occupancyCtx = document.getElementById('occupancyChart').getContext('2d');
+    const occupancyChart = new Chart(occupancyCtx, {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode(array_column($weeklyData, 'date')); ?>,
+            datasets: [{
+                label: 'Occupancy',
+                data: <?php echo json_encode(array_column($weeklyData, 'occupancy')); ?>,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Rooms'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+
+    // Weekly Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode(array_column($weeklyData, 'date')); ?>,
+            datasets: [{
+                label: 'Revenue (LKR)',
+                data: <?php echo json_encode(array_column($weeklyData, 'revenue')); ?>,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Revenue (LKR)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+
+    // Room Type Distribution Chart
+    const roomTypeCtx = document.getElementById('roomTypeChart').getContext('2d');
+    const roomTypeChart = new Chart(roomTypeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: <?php echo json_encode(array_column($occupancyReport, 'room_type')); ?>,
+            datasets: [{
+                data: <?php echo json_encode(array_column($occupancyReport, 'total_occupancy')); ?>,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+
+    // Reservation Status Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusChart = new Chart(statusCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Pending', 'Confirmed', 'Checked In', 'Checked Out', 'Cancelled'],
+            datasets: [{
+                data: [
+                    <?php 
+                    $stmt = $pdo->query("SELECT COUNT(*) FROM reservations WHERE status = 'pending'");
+                    echo $stmt->fetchColumn() . ',';
+                    $stmt = $pdo->query("SELECT COUNT(*) FROM reservations WHERE status = 'confirmed'");
+                    echo $stmt->fetchColumn() . ',';
+                    $stmt = $pdo->query("SELECT COUNT(*) FROM reservations WHERE status = 'checked_in'");
+                    echo $stmt->fetchColumn() . ',';
+                    $stmt = $pdo->query("SELECT COUNT(*) FROM reservations WHERE status = 'checked_out'");
+                    echo $stmt->fetchColumn() . ',';
+                    $stmt = $pdo->query("SELECT COUNT(*) FROM reservations WHERE status = 'cancelled'");
+                    echo $stmt->fetchColumn();
+                    ?>
+                ],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+</script>
+
+<style>
+    .chart-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+    
+    .chart-container {
+    flex: 1;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    max-height: 350px; /* Set max height */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.chart-container canvas {
+    max-height: 260px; /* Controls actual chart height */
+    height: 260px !important;
+}
+    
+    .chart-container h2 {
+        margin-top: 0;
+        font-size: 18px;
+        color: #333;
+    }
+    
+    @media (max-width: 768px) {
+        .chart-row {
+            flex-direction: column;
+        }
+    }
+</style>
 
 <?php require_once '../includes/footer.php'; ?>

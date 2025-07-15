@@ -42,6 +42,8 @@ require_once '../includes/header.php';
         <ul>
             <li><a href="<?php echo BASE_URL; ?>/travel_company/dashboard.php">Dashboard</a></li>
             <li><a href="<?php echo BASE_URL; ?>/travel_company/block_bookings.php" class="active">Block Bookings</a></li>
+            <li><a href="<?php echo BASE_URL; ?>/travel_company/profile.php">Profile</a></li>
+
         </ul>
     </div>
     <div class="main-content">

@@ -103,8 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <ul>
             <li><a href="<?php echo BASE_URL; ?>/customer/dashboard.php">Dashboard</a></li>
             <li><a href="<?php echo BASE_URL; ?>/customer/reservations.php">My Reservations</a></li>
-            <li><a href="<?php echo BASE_URL; ?>/customer/profile.php" class="active">Profile</a></li>
             <li><a href="<?php echo BASE_URL; ?>/reservations.php">Book a Room</a></li>
+            <li><a href="<?php echo BASE_URL; ?>/customer/profile.php" class="active">Profile</a></li>
         </ul>
     </div>
     <div class="main-content">

@@ -597,4 +597,51 @@ function deleteUser($pdo, $userId) {
         return false;
     }
 }
+
+function getWeeklyOccupancyData() {
+    global $pdo;
+    
+    $startDate = date('Y-m-d', strtotime('-7 days'));
+    $endDate = date('Y-m-d');
+    
+    $stmt = $pdo->prepare("SELECT 
+                          DATE(check_in_date) as date,
+                          COUNT(*) as occupancy,
+                          SUM(b.total_amount) as revenue
+                          FROM reservations r
+                          LEFT JOIN billing b ON r.reservation_id = b.reservation_id
+                          WHERE DATE(check_in_date) BETWEEN ? AND ?
+                          AND r.status IN ('checked_in', 'checked_out')
+                          GROUP BY DATE(check_in_date)
+                          ORDER BY DATE(check_in_date)");
+    $stmt->execute([$startDate, $endDate]);
+    
+    // Fill in missing dates with 0 values
+    $results = [];
+    $currentDate = new DateTime($startDate);
+    $endDateObj = new DateTime($endDate);
+    
+    while ($currentDate <= $endDateObj) {
+        $dateStr = $currentDate->format('Y-m-d');
+        $results[$dateStr] = [
+            'date' => $currentDate->format('M j'),
+            'occupancy' => 0,
+            'revenue' => 0
+        ];
+        $currentDate->modify('+1 day');
+    }
+    
+    // Merge with actual data
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $dateStr = $row['date'];
+        $results[$dateStr] = [
+            'date' => date('M j', strtotime($dateStr)),
+            'occupancy' => (int)$row['occupancy'],
+            'revenue' => (float)$row['revenue']
+        ];
+    }
+    
+    return array_values($results);
+}
+
 ?>
