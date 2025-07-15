@@ -10,7 +10,7 @@ $stmt = $pdo->prepare("SELECT tc.*, u.email, u.phone
                       JOIN users u ON tc.company_id = u.user_id
                       WHERE tc.company_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
-$company = $stmt->fetch();
+$company = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Get block bookings
 $stmt = $pdo->prepare("SELECT bb.*, rt.name as room_type
@@ -32,17 +32,22 @@ require_once '../includes/header.php';
         </ul>
     </div>
     <div class="main-content">
-        <h1>Welcome Travel Dashboard, <?php echo $company['company_name']; ?></h1>
-        <p>Here you can manage your block bookings and reservations.</p>
-        
-        <div class="company-details">
-            <h2>Company Information</h2>
-            <p><strong>Contact Email:</strong> <?php echo $company['email']; ?></p>
-            <p><strong>Phone:</strong> <?php echo $company['phone']; ?></p>
-            <p><strong>Discount Rate:</strong> <?php echo ($company['discount_rate'] * 100); ?>%</p>
-            <p><strong>Billing Address:</strong> <?php echo nl2br($company['billing_address']); ?></p>
-        </div>
-        
+        <?php if ($company): ?>
+            <h1>Welcome Travel Dashboard, <?php echo $company['company_name']; ?></h1>
+            <p>Here you can manage your block bookings and reservations.</p>
+
+            <div class="company-details">
+                <h2>Company Information</h2>
+                <p><strong>Contact Email:</strong> <?php echo $company['email']; ?></p>
+                <p><strong>Phone:</strong> <?php echo $company['phone']; ?></p>
+                <p><strong>Discount Rate:</strong> <?php echo ($company['discount_rate'] * 100); ?>%</p>
+                <p><strong>Billing Address:</strong> <?php echo nl2br($company['billing_address']); ?></p>
+            </div>
+        <?php else: ?>
+            <h1>Welcome Travel Dashboard</h1>
+            <p>Company information could not be found. Please contact support.</p>
+        <?php endif; ?>
+
         <h2>Recent Block Bookings</h2>
         <?php if (count($blockBookings) > 0): ?>
             <table>

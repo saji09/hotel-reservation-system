@@ -103,10 +103,13 @@ function registerUser($data) {
     
     $userId = $pdo->lastInsertId();
     
-    // Insert into specific role table if needed
+    // Automatically add to customers table if role is customer
     if ($data['role'] == 'customer') {
         $stmt = $pdo->prepare("INSERT INTO customers (customer_id, credit_card_info) VALUES (?, ?)");
-        $stmt->execute([$userId, $data['credit_card_info'] ?? null]);
+        $stmt->execute([
+            $userId,
+            $data['credit_card_info'] ?? null
+        ]);
     } elseif ($data['role'] == 'travel_company') {
         $stmt = $pdo->prepare("INSERT INTO travel_companies (company_id, company_name, discount_rate, billing_address) 
                               VALUES (?, ?, ?, ?)");

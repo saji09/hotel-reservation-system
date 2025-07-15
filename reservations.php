@@ -7,6 +7,7 @@ $roomTypes = getRoomTypes();
 $error = '';
 $success = false;
 
+// In your reservations.php file, modify the form handling:
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data = [
         'customer_id' => isLoggedIn() ? $_SESSION['user_id'] : null,
@@ -14,24 +15,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'check_out_date' => $_POST['check_out_date'],
         'adults' => $_POST['adults'],
         'children' => $_POST['children'] ?? 0,
-        'room_id' => $_POST['room_id'] ?? null,
-        'suite_id' => $_POST['suite_id'] ?? null,
+        'room_id' => !empty($_POST['room_id']) ? $_POST['room_id'] : null,
+        'suite_id' => !empty($_POST['suite_id']) ? $_POST['suite_id'] : null,
         'credit_card_info' => $_POST['credit_card_info'] ?? null,
         'special_requests' => $_POST['special_requests'] ?? null,
         'status' => 'pending'
     ];
     
-    if (isset($_POST['is_company_booking'])) {
-        $data['is_company_booking'] = true;
-        $data['company_id'] = $_SESSION['user_id'];
-    }
-    
-    $result = createReservation($data);
-    
-    if ($result['success']) {
-        $success = true;
+    // Ensure only one of room_id or suite_id is set
+    if ($data['room_id'] && $data['suite_id']) {
+        $error = "Please select either a room or a suite, not both";
     } else {
-        $error = $result['message'];
+        if (isset($_POST['is_company_booking'])) {
+            $data['is_company_booking'] = true;
+            $data['company_id'] = $_SESSION['user_id'];
+        }
+        
+        $result = createReservation($data);
+        
+        if ($result['success']) {
+            $success = true;
+        } else {
+            $error = $result['message'];
+        }
     }
 }
 

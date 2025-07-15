@@ -46,6 +46,31 @@ function createReservation($data) {
     try {
         $pdo->beginTransaction();
         
+        // Validate suite exists if suite_id is provided
+        if (!empty($data['suite_id'])) {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM residential_suites WHERE suite_id = ?");
+            $stmt->execute([$data['suite_id']]);
+            $suiteExists = $stmt->fetchColumn();
+            
+            if (!$suiteExists) {
+                $pdo->rollBack();
+                return ['success' => false, 'message' => 'Selected residential suite does not exist'];
+            }
+        }
+        
+        // Check if customer exists in customers table
+        if ($data['customer_id']) {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM customers WHERE customer_id = ?");
+            $stmt->execute([$data['customer_id']]);
+            $customerExists = $stmt->fetchColumn();
+            
+            if (!$customerExists) {
+                // If customer doesn't exist in customers table, add them
+                $stmt = $pdo->prepare("INSERT INTO customers (customer_id) VALUES (?)");
+                $stmt->execute([$data['customer_id']]);
+            }
+        }
+        
         $stmt = $pdo->prepare("INSERT INTO reservations 
                               (customer_id, room_id, suite_id, check_in_date, check_out_date, 
                               adults, children, status, credit_card_info, is_company_booking, company_id, special_requests)
@@ -68,6 +93,12 @@ function createReservation($data) {
         
         $reservationId = $pdo->lastInsertId();
         
+        // Update suite status if suite was booked
+        if (!empty($data['suite_id'])) {
+            $stmt = $pdo->prepare("UPDATE residential_suites SET status = 'occupied' WHERE suite_id = ?");
+            $stmt->execute([$data['suite_id']]);
+        }
+        
         $pdo->commit();
         
         return ['success' => true, 'reservation_id' => $reservationId];
@@ -76,7 +107,6 @@ function createReservation($data) {
         return ['success' => false, 'message' => $e->getMessage()];
     }
 }
-
 // Check in a guest
 function checkInGuest($reservationId, $roomId = null, $suiteId = null) {
     global $pdo;
