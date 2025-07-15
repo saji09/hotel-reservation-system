@@ -1,0 +1,15 @@
+# Ignore logs and runtime files
+*.log
+*.tmp
+*.cache
+*.bak
+*.swp
+
+# Ignore IDE/editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore Composer dependencies (vendor)
+vendor/
