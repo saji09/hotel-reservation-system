@@ -48,7 +48,7 @@ require_once '../includes/header.php';
                             <td><?php echo date('M j, Y', strtotime($res['check_in_date'])); ?></td>
                             <td><?php echo date('M j, Y', strtotime($res['check_out_date'])); ?></td>
                             <td><?php echo ucfirst(str_replace('_', ' ', $res['status'])); ?></td>
-                            <td>$<?php echo number_format($res['total_amount'] ?? 0, 2); ?></td>
+                            <td>LKR <?php echo number_format($res['total_amount'] ?? 0, 2); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

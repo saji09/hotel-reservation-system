@@ -5,20 +5,41 @@ checkRole(['admin']);
 require_once '../includes/functions.php';
 
 // Get all reservations
-$stmt = $pdo->query("SELECT r.*, 
-                    u.first_name, u.last_name,
-                    rt.name as room_type,
-                    rm.room_number,
-                    rs.suite_number,
-                    b.total_amount,
-                    b.payment_status
-                    FROM reservations r
-                    JOIN users u ON r.customer_id = u.user_id
-                    LEFT JOIN rooms rm ON r.room_id = rm.room_id
-                    LEFT JOIN room_types rt ON rm.type_id = rt.type_id
-                    LEFT JOIN residential_suites rs ON r.suite_id = rs.suite_id
-                    LEFT JOIN billing b ON r.reservation_id = b.reservation_id
-                    ORDER BY r.check_in_date DESC");
+$search = $_GET['search'] ?? '';
+$statusFilter = $_GET['status'] ?? '';
+
+$sql = "SELECT r.*, 
+            u.first_name, u.last_name,
+            rt.name as room_type,
+            rm.room_number,
+            rs.suite_number,
+            b.total_amount,
+            b.payment_status
+        FROM reservations r
+        JOIN users u ON r.customer_id = u.user_id
+        LEFT JOIN rooms rm ON r.room_id = rm.room_id
+        LEFT JOIN room_types rt ON rm.type_id = rt.type_id
+        LEFT JOIN residential_suites rs ON r.suite_id = rs.suite_id
+        LEFT JOIN billing b ON r.reservation_id = b.reservation_id
+        WHERE 1=1";
+
+$params = [];
+
+if (!empty($search)) {
+    $sql .= " AND (u.first_name LIKE :search OR u.last_name LIKE :search OR r.reservation_id = :exact_id)";
+    $params[':search'] = '%' . $search . '%';
+    $params[':exact_id'] = $search;
+}
+
+if (!empty($statusFilter)) {
+    $sql .= " AND r.status = :status";
+    $params[':status'] = $statusFilter;
+}
+
+$sql .= " ORDER BY r.check_in_date DESC";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle reservation cancellation
@@ -44,6 +65,7 @@ require_once '../includes/header.php';
             <li><a href="<?php echo BASE_URL; ?>/admin/rooms.php">Manage Rooms</a></li>
             <li><a href="<?php echo BASE_URL; ?>/admin/reservations.php" class="active">Reservations</a></li>
             <li><a href="<?php echo BASE_URL; ?>/admin/room_types.php">Room Types</a></li>
+            <li><a href="<?php echo BASE_URL; ?>/admin/users.php">User Management</a></li>
         </ul>
     </div>
     <div class="main-content">

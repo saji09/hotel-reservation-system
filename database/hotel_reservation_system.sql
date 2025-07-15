@@ -139,23 +139,12 @@ CREATE TABLE reports (
     FOREIGN KEY (generated_by) REFERENCES users(user_id)
 );
 
-
--- Insert admin user
-INSERT INTO users (username, PASSWORD, email, ROLE, first_name, last_name, phone, address)
-VALUES 
-('admin', SHA2('admin123', 256), 'admin@gmail.com', 'admin', 'Prathap', 'Sivananthan', '1234567890', '123 Karainagar, Jaffna');
-
--- Insert clerk user
-INSERT INTO users (username, PASSWORD, email, ROLE, first_name, last_name, phone,`users` address)
-VALUES 
-('clerk', SHA2('clerk123', 256), 'clerk@gmail.com', 'clerk', 'Ajith', 'Kumar', '9876543210', '456 Kokuvil, Jaffna');
-
--- Insert customer user
-INSERT INTO users (username, PASSWORD, email, ROLE, first_name, last_name, phone, address)
-VALUES 
-('customer', SHA2('customer123', 256), 'customer@gmail.com', 'customer', 'Vijay', 'Anthony', '5551234567', '789 Inuvil, Jaffna');
-
--- Insert travel company user
-INSERT INTO users (username, PASSWORD, email, ROLE, first_name, last_name, phone, address)
-VALUES 
-('travel', SHA2('travel123', 256), 'travelco@gmail.com', 'travel_company', 'Kamal', 'Hasan', '4449876543', '321 Kondavil, Jaffna');
+CREATE TABLE password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    token VARCHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX (email),
+    INDEX (token)
+);

@@ -446,4 +446,155 @@ function getUserReservations($userId) {
     $stmt->execute([$userId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
+/**
+ * Create a new user with role-specific data
+ */
+function createUser($pdo, $userData) {
+    try {
+        $pdo->beginTransaction();
+        
+        // Hash password
+        $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
+        
+        // Insert into users table
+        $stmt = $pdo->prepare("INSERT INTO users 
+                              (username, password, email, role, first_name, last_name, phone, address) 
+                              VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $userData['username'],
+            $hashedPassword,
+            $userData['email'],
+            $userData['role'],
+            $userData['first_name'],
+            $userData['last_name'],
+            $userData['phone'],
+            $userData['address']
+        ]);
+        
+        $userId = $pdo->lastInsertId();
+        
+        // Handle role-specific inserts
+        switch ($userData['role']) {
+            case 'customer':
+                $stmt = $pdo->prepare("INSERT INTO customers 
+                                      (customer_id, credit_card_info, loyalty_points) 
+                                      VALUES (?, ?, 0)");
+                $stmt->execute([$userId, $userData['credit_card_info']]);
+                break;
+                
+            case 'travel_company':
+                $stmt = $pdo->prepare("INSERT INTO travel_companies 
+                                      (company_id, company_name, discount_rate, billing_address) 
+                                      VALUES (?, ?, ?, ?)");
+                $stmt->execute([
+                    $userId,
+                    $userData['company_name'],
+                    $userData['discount_rate'],
+                    $userData['address'] // Using main address as billing address
+                ]);
+                break;
+        }
+        
+        $pdo->commit();
+        return true;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("User creation failed: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Update user information
+ */
+function updateUser($pdo, $userId, $userData) {
+    try {
+        $pdo->beginTransaction();
+        
+        // Update users table
+        $stmt = $pdo->prepare("UPDATE users SET 
+                              email = ?, first_name = ?, last_name = ?, 
+                              phone = ?, address = ?
+                              WHERE user_id = ?");
+        $stmt->execute([
+            $userData['email'],
+            $userData['first_name'],
+            $userData['last_name'],
+            $userData['phone'],
+            $userData['address'],
+            $userId
+        ]);
+        
+        // Handle role-specific updates
+        $stmt = $pdo->prepare("SELECT role FROM users WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $role = $stmt->fetchColumn();
+        
+        switch ($role) {
+            case 'customer':
+                $stmt = $pdo->prepare("UPDATE customers SET 
+                                      credit_card_info = ?
+                                      WHERE customer_id = ?");
+                $stmt->execute([$userData['credit_card_info'], $userId]);
+                break;
+                
+            case 'travel_company':
+                $stmt = $pdo->prepare("UPDATE travel_companies SET 
+                                      company_name = ?, discount_rate = ?
+                                      WHERE company_id = ?");
+                $stmt->execute([
+                    $userData['company_name'],
+                    $userData['discount_rate'],
+                    $userId
+                ]);
+                break;
+        }
+        
+        $pdo->commit();
+        return true;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("User update failed: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Delete a user and their role-specific data
+ */
+function deleteUser($pdo, $userId) {
+    try {
+        $pdo->beginTransaction();
+        
+        // First get role to know which tables to clean up
+        $stmt = $pdo->prepare("SELECT role FROM users WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $role = $stmt->fetchColumn();
+        
+        // Delete from role-specific table first
+        switch ($role) {
+            case 'customer':
+                $stmt = $pdo->prepare("DELETE FROM customers WHERE customer_id = ?");
+                $stmt->execute([$userId]);
+                break;
+                
+            case 'travel_company':
+                $stmt = $pdo->prepare("DELETE FROM travel_companies WHERE company_id = ?");
+                $stmt->execute([$userId]);
+                break;
+        }
+        
+        // Then delete from users table
+        $stmt = $pdo->prepare("DELETE FROM users WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        
+        $pdo->commit();
+        return true;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("User deletion failed: " . $e->getMessage());
+        return false;
+    }
+}
 ?>

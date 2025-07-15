@@ -56,6 +56,7 @@ require_once '../includes/header.php';
             <li><a href="<?php echo BASE_URL; ?>/admin/rooms.php" class="active">Manage Rooms</a></li>
             <li><a href="<?php echo BASE_URL; ?>/admin/reservations.php">Reservations</a></li>
             <li><a href="<?php echo BASE_URL; ?>/admin/room_types.php">Room Types</a></li>
+            <li><a href="<?php echo BASE_URL; ?>/admin/users.php">User Management</a></li>
         </ul>
     </div>
     <div class="main-content">

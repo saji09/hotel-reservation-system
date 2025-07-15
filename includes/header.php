@@ -14,7 +14,7 @@ require_once 'auth.php';
     <header>
         <div class="container">
             <div class="logo">
-                <h1><a href="<?php echo BASE_URL; ?>">Hotel<span>Reserve</span></a></h1>
+                <h1><a href="<?php echo BASE_URL; ?>"> <i class="fas fa-hotel"></i> Online <span>Reservation System</span></a></h1>
             </div>
             <nav>
                 <ul>
