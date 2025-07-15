@@ -45,7 +45,7 @@ require_once '../includes/header.php';
             </div>
             <div class="stat-card">
                 <h3>Today's Revenue</h3>
-                <p>$<?php echo number_format($totalRevenue, 2); ?></p>
+                <p>LKR <?php echo number_format($totalRevenue, 2); ?></p>
             </div>
             <div class="stat-card">
                 <h3>Current Guests</h3>
@@ -76,7 +76,7 @@ require_once '../includes/header.php';
                             <td><?php echo $row['room_type']; ?></td>
                             <td><?php echo $row['total_occupancy']; ?></td>
                             <td><?php echo $row['current_guests']; ?></td>
-                            <td>$<?php echo number_format($row['total_revenue'], 2); ?></td>
+                            <td>LKR <?php echo number_format($row['total_revenue'], 2); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

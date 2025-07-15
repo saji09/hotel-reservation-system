@@ -159,20 +159,29 @@ function checkOutGuest($reservationId) {
             throw new Exception("Reservation not found");
         }
         
-        // Calculate charges
-        $roomTypeId = null;
-        $nightlyRate = 0;
-        $nights = 0;
+        // Initialize default values
+        $roomCharges = 0;
+        $additionalCharges = 0;
+        $tax = 0;
+        $totalAmount = 0;
         
+        // Calculate room charges
         if ($reservation['room_id']) {
             // Get room type and rate
-            $stmt = $pdo->prepare("SELECT rt.type_id, rt.base_price FROM rooms r 
-                                  JOIN room_types rt ON r.type_id = rt.type_id 
-                                  WHERE r.room_id = ?");
+            $stmt = $pdo->prepare("SELECT rt.base_price FROM rooms r 
+                                 JOIN room_types rt ON r.type_id = rt.type_id 
+                                 WHERE r.room_id = ?");
             $stmt->execute([$reservation['room_id']]);
             $room = $stmt->fetch();
-            $roomTypeId = $room['type_id'];
             $nightlyRate = $room['base_price'];
+            
+            // Calculate nights
+            $checkIn = new DateTime($reservation['check_in_date']);
+            $checkOut = new DateTime($reservation['check_out_date']);
+            $interval = $checkIn->diff($checkOut);
+            $nights = $interval->days;
+            
+            $roomCharges = $nightlyRate * $nights;
             
             // Update room status
             $stmt = $pdo->prepare("UPDATE rooms SET status = 'available' WHERE room_id = ?");
@@ -184,17 +193,15 @@ function checkOutGuest($reservationId) {
             $interval = $checkIn->diff($checkOut);
             $days = $interval->days;
             
+            $stmt = $pdo->prepare("SELECT weekly_rate, monthly_rate FROM residential_suites WHERE suite_id = ?");
+            $stmt->execute([$reservation['suite_id']]);
+            $suite = $stmt->fetch();
+            
             if ($days >= 28) { // Monthly rate
-                $stmt = $pdo->prepare("SELECT monthly_rate FROM residential_suites WHERE suite_id = ?");
-                $stmt->execute([$reservation['suite_id']]);
-                $suite = $stmt->fetch();
-                $nightlyRate = $suite['monthly_rate'];
+                $roomCharges = $suite['monthly_rate'];
                 $nights = 1; // Count as one monthly charge
             } else { // Weekly rate
-                $stmt = $pdo->prepare("SELECT weekly_rate FROM residential_suites WHERE suite_id = ?");
-                $stmt->execute([$reservation['suite_id']]);
-                $suite = $stmt->fetch();
-                $nightlyRate = $suite['weekly_rate'];
+                $roomCharges = $suite['weekly_rate'];
                 $nights = ceil($days / 7); // Count in weeks
             }
             
@@ -203,24 +210,14 @@ function checkOutGuest($reservationId) {
             $stmt->execute([$reservation['suite_id']]);
         }
         
-        // Calculate nights for regular rooms
-        if ($reservation['room_id']) {
-            $checkIn = new DateTime($reservation['check_in_date']);
-            $checkOut = new DateTime($reservation['check_out_date']);
-            $interval = $checkIn->diff($checkOut);
-            $nights = $interval->days;
-        }
-        
         // Apply discount for company bookings
         if ($reservation['is_company_booking']) {
             $stmt = $pdo->prepare("SELECT discount_rate FROM travel_companies WHERE company_id = ?");
             $stmt->execute([$reservation['company_id']]);
             $company = $stmt->fetch();
             $discountRate = $company['discount_rate'];
-            $nightlyRate = $nightlyRate * (1 - $discountRate);
+            $roomCharges = $roomCharges * (1 - $discountRate);
         }
-        
-        $roomCharges = $nightlyRate * $nights;
         
         // Get additional charges
         $stmt = $pdo->prepare("SELECT SUM(amount) as total FROM additional_services WHERE reservation_id = ?");
@@ -237,7 +234,7 @@ function checkOutGuest($reservationId) {
                               (reservation_id, room_charges, additional_charges, tax, total_amount, payment_method, payment_status)
                               VALUES (?, ?, ?, ?, ?, ?, ?)");
         
-        $paymentMethod = $reservation['is_company_booking'] ? 'company' : 'cash';
+        $paymentMethod = $_POST['payment_method'] ?? ($reservation['is_company_booking'] ? 'company' : 'cash');
         $stmt->execute([
             $reservationId,
             $roomCharges,
@@ -245,7 +242,7 @@ function checkOutGuest($reservationId) {
             $tax,
             $totalAmount,
             $paymentMethod,
-            'pending'
+            'paid'
         ]);
         
         // Update reservation status
@@ -253,7 +250,15 @@ function checkOutGuest($reservationId) {
         $stmt->execute([$reservationId]);
         
         $pdo->commit();
-        return ['success' => true, 'total_amount' => $totalAmount];
+        
+        return [
+            'success' => true, 
+            'total_amount' => $totalAmount,
+            'room_charges' => $roomCharges,
+            'additional_charges' => $additionalCharges,
+            'tax' => $tax,
+            'payment_method' => $paymentMethod
+        ];
     } catch (Exception $e) {
         $pdo->rollBack();
         return ['success' => false, 'message' => $e->getMessage()];

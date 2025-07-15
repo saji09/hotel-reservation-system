@@ -60,7 +60,7 @@ require_once '../includes/header.php';
         <?php if ($reservation): ?>
             <?php if ($success): ?>
                 <div class="alert alert-success">
-                    Guest checked out successfully! Total amount: $<?php echo number_format($billDetails['total_amount'], 2); ?>
+                    Guest checked out successfully! Total amount: $<?php echo number_format($billDetails['total_amount'] ?? 0, 2); ?>
                 </div>
                 
                 <h2>Check-out Statement</h2>
@@ -72,6 +72,7 @@ require_once '../includes/header.php';
                     </p>
                     <p><strong>Check-in Date:</strong> <?php echo date('M j, Y', strtotime($reservation['check_in_date'])); ?></p>
                     <p><strong>Check-out Date:</strong> <?php echo date('M j, Y'); ?></p>
+                    <p><strong>Payment Method:</strong> <?php echo ucfirst($billDetails['payment_method'] ?? 'cash'); ?></p>
                     
                     <table>
                         <thead>
@@ -83,19 +84,19 @@ require_once '../includes/header.php';
                         <tbody>
                             <tr>
                                 <td>Room Charges</td>
-                                <td>$<?php echo number_format($billDetails['room_charges'], 2); ?></td>
+                                <td>LKR <?php echo number_format($billDetails['room_charges'] ?? 0, 2); ?></td>
                             </tr>
                             <tr>
                                 <td>Additional Charges</td>
-                                <td>$<?php echo number_format($billDetails['additional_charges'], 2); ?></td>
+                                <td>LKR <?php echo number_format($billDetails['additional_charges'] ?? 0, 2); ?></td>
                             </tr>
                             <tr>
                                 <td>Tax (10%)</td>
-                                <td>$<?php echo number_format($billDetails['tax'], 2); ?></td>
+                                <td>LKR <?php echo number_format($billDetails['tax'] ?? 0, 2); ?></td>
                             </tr>
                             <tr>
                                 <td><strong>Total Amount</strong></td>
-                                <td><strong>$<?php echo number_format($billDetails['total_amount'], 2); ?></strong></td>
+                                <td><strong>LKR <?php echo number_format($billDetails['total_amount'] ?? 0, 2); ?></strong></td>
                             </tr>
                         </tbody>
                     </table>
